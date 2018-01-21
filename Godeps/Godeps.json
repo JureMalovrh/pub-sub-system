@@ -1,0 +1,51 @@
+{
+	"ImportPath": "pub-sub",
+	"GoVersion": "go1.9",
+	"GodepVersion": "v79",
+	"Packages": [
+		".",
+		"./tracker/"
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.3.0-7-ga368813",
+			"Rev": "a368813c5e648fee92e5f6c30e3944ff9d5e8895"
+		},
+		{
+			"ImportPath": "github.com/globalsign/mgo",
+			"Comment": "r2018.01.15",
+			"Rev": "896bbb89d21253a28cd5a7f8b81fe091410cb94d"
+		},
+		{
+			"ImportPath": "github.com/globalsign/mgo/bson",
+			"Comment": "r2018.01.15",
+			"Rev": "896bbb89d21253a28cd5a7f8b81fe091410cb94d"
+		},
+		{
+			"ImportPath": "github.com/globalsign/mgo/internal/json",
+			"Comment": "r2018.01.15",
+			"Rev": "896bbb89d21253a28cd5a7f8b81fe091410cb94d"
+		},
+		{
+			"ImportPath": "github.com/globalsign/mgo/internal/sasl",
+			"Comment": "r2018.01.15",
+			"Rev": "896bbb89d21253a28cd5a7f8b81fe091410cb94d"
+		},
+		{
+			"ImportPath": "github.com/globalsign/mgo/internal/scram",
+			"Comment": "r2018.01.15",
+			"Rev": "896bbb89d21253a28cd5a7f8b81fe091410cb94d"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Comment": "v1.6.1-10-gc0091a0",
+			"Rev": "c0091a029979286890368b4c7b301261e448e242"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Comment": "v1.2.0-26-g292fd08",
+			"Rev": "292fd08b2560ad524ee37396253d71570339a821"
+		}
+	]
+}
