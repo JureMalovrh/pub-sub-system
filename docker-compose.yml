@@ -1,0 +1,33 @@
+version: '3'
+services:
+  tracker:
+    image: tracker/go
+    ports: 
+      - "8080:8080"
+    links:
+      - database
+      - publisher
+    volumes:
+      - .:/go/src/pub-sub
+    working_dir: /go/src/pub-sub/tracker
+    depends_on:
+      - database
+      - publisher
+    tty: true
+    command: make run
+    
+  database:
+    image: tracker/mongo
+    ports:
+     - "27017:27017"
+  
+  publisher:
+    image: tracker/node
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./publisher:/opt/code/publisher
+    working_dir: /opt/code/publisher
+    command: make run
+    tty: true
+    
