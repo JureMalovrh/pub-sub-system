@@ -1,0 +1,11 @@
+address = ":8080"
+[database]
+server = "mongodb://database"
+port = "27017"
+table = "tracker"
+collection = "user"
+
+[publisher]
+url = "publisher"
+port = "8000"
+method = "ws"
