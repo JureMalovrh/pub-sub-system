@@ -12,3 +12,6 @@ run/printer: build
 
 run/printer/%: build
 	@./dist/client -filter=$*
+
+qa:
+	go test -v -race -timeout 30s ./cmd

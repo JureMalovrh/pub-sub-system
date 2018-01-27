@@ -8,106 +8,142 @@ import (
 	"time"
 )
 
+//Message struct definition
 type Message struct {
 	AccountID string `json:"accountId"`
 	Data      string `json:"data"`
 	Timestamp int64  `json:"timestamp"`
 }
 
-func messageReceiverHandler(messages chan []byte, messageReceiver Receiver) {
+func messageReceiverHandler(messages chan []byte, close chan bool, messageReceiver Receiver) {
 	for {
+		if messageReceiver.IsClosed() {
+			close <- true
+			return
+		}
+
 		message := messageReceiver.ReadMessage()
+		if len(message) == 0 {
+			continue
+		}
+
 		messages <- message
 	}
 }
 
-func messageParserHandler(messages chan []byte, parsedMessages chan Message) {
+func messageParserHandler(messages chan []byte, close chan bool, parsedMessages chan Message) {
 	for {
-		msg := <-messages
-		messageObject := Message{}
-		err := json.Unmarshal(msg, &messageObject)
-		if err != nil {
-			continue
-		}
-		parsedMessages <- messageObject
-	}
-}
-
-func messageFilterHandler(parsedMessages chan Message, filteredMessages chan Message, idFilter string) {
-	for {
-		msg := <-parsedMessages
-		if idFilter != "" {
-			if msg.AccountID == idFilter {
-				filteredMessages <- msg
+		select {
+		case msg := <-messages:
+			messageObject := Message{}
+			err := json.Unmarshal(msg, &messageObject)
+			if err != nil {
+				continue
 			}
-			continue
+			parsedMessages <- messageObject
+		case <-close:
+			return
 		}
-		filteredMessages <- msg
 	}
 }
 
-func multiplexerHandler(filteredMessages chan Message, aggregatedMessages chan Message, printedMessages chan Message, aggregateMessages bool) {
+func messageFilterHandler(parsedMessages chan Message, filteredMessages chan Message, close chan bool, idFilter string) {
 	for {
-		msg := <-filteredMessages
-		if aggregateMessages {
-			aggregatedMessages <- msg
-			continue
+		select {
+		case msg := <-parsedMessages:
+			if idFilter != "" {
+				if msg.AccountID == idFilter {
+					filteredMessages <- msg
+				}
+				continue
+			}
+			filteredMessages <- msg
+		case <-close:
+			return
 		}
-		printedMessages <- msg
 	}
 }
 
-func messagePrinterHandler(printedMessages chan Message, interrupt chan os.Signal, messageReceiver Receiver) {
-	defer messageReceiver.Close()
+func multiplexerHandler(filteredMessages chan Message, aggregatedMessages chan Message, printedMessages chan Message, close chan bool, aggregateMessages bool) {
+	for {
+		select {
+		case msg := <-filteredMessages:
+			if aggregateMessages {
+				aggregatedMessages <- msg
+				continue
+			}
+			printedMessages <- msg
+		case <-close:
+			return
+		}
+
+	}
+}
+
+func messagePrinterHandler(printedMessages chan Message, interrupt chan os.Signal, done chan bool, close chan bool, messageReceiver Receiver) {
 	for {
 		select {
 		case msg := <-printedMessages:
 			log.Printf("Received a data from active account id %s: data: %s, time: %d", msg.AccountID, msg.Data, msg.Timestamp)
 		case <-interrupt:
-			log.Println("interrupt")
-			err := messageReceiver.CloseMessage()
-			if err != nil {
-				log.Println("write close:", err)
-				return
-			}
 			messageReceiver.Close()
+			messageReceiver.CloseMessage()
+			done <- true
+			return
+		case <-close:
 			return
 		}
 
 	}
 }
 
-func messageAggregatorHandler(aggregatedMessages chan Message, aggregateFrequency int, interrupt chan os.Signal, messageReceiver Receiver) {
+func messageAggregatorHandler(aggregatedMessages chan Message, aggregateFrequency int, interrupt chan os.Signal, done chan bool, close chan bool, messageReceiver Receiver) {
 	ticker := time.NewTicker(time.Duration(aggregateFrequency) * time.Second)
-
 	defer ticker.Stop()
-	defer messageReceiver.Close()
 
-	kv := map[string]int{}
+	aggregateCounter := map[string]int{}
 	for {
 		select {
 		case msg := <-aggregatedMessages:
-			kv[msg.AccountID] = kv[msg.AccountID] + 1
-
+			aggregateCounter[msg.AccountID] = aggregateCounter[msg.AccountID] + 1
 		case <-ticker.C:
 			log.Print("Aggregated messages received for accounts\n")
-			for key, val := range kv {
+			for key, val := range aggregateCounter {
 				log.Printf("ID: %s, number of messages %d", key, val)
 			}
-
 		case <-interrupt:
-			log.Println("interrupt")
-			err := messageReceiver.CloseMessage()
-			if err != nil {
-				log.Println("write close:", err)
-				return
-			}
+			//log.Println("interrupt")
+			messageReceiver.CloseMessage()
+
 			select {
 			case <-time.After(time.Second):
 			}
 			messageReceiver.Close()
+			done <- true
+			return
+		case <-close:
 			return
 		}
+	}
+}
+
+func createMessageHandler(messageReceiver Receiver, filter string, aggregate bool, aggregateFrequency int, interrupt chan os.Signal, done chan bool) {
+	messages := make(chan []byte, 5)
+	close := make(chan bool, 1)
+	parsedMessages := make(chan Message, 5)
+	filteredMessages := make(chan Message, 5)
+	aggregatedMessages := make(chan Message, 5)
+	printedMessages := make(chan Message, 5)
+
+	go messageReceiverHandler(messages, close, messageReceiver)
+	go messageParserHandler(messages, close, parsedMessages)
+	go messageFilterHandler(parsedMessages, filteredMessages, close, filter)
+	go multiplexerHandler(filteredMessages, aggregatedMessages, printedMessages, close, aggregate)
+
+	if aggregate {
+		go messageAggregatorHandler(aggregatedMessages, aggregateFrequency, interrupt, done, close, messageReceiver)
+	} else {
+		go messagePrinterHandler(printedMessages, interrupt, done, close, messageReceiver)
 	}
 }
 
@@ -119,31 +155,21 @@ func main() {
 		aggregateFrequency = flag.Int("aggfreq", 3, "Only if agg=true, set time for updation of screen for aggregated data")
 	)
 	flag.Parse()
+
 	interrupt := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
 
 	log.Printf("connecting to %s", *addr)
 	messageReceiver := NewMessageReceiver(*addr)
 	messageReceiver.Connect()
 	defer messageReceiver.Close()
 
-	messages := make(chan []byte)
-	parsedMessages := make(chan Message)
-	filteredMessages := make(chan Message)
-	aggregatedMessages := make(chan Message)
-	printedMessages := make(chan Message)
+	createMessageHandler(messageReceiver, *filter, *aggregate, *aggregateFrequency, interrupt, done)
 
-	go messageReceiverHandler(messages, messageReceiver)
-	go messageParserHandler(messages, parsedMessages)
-	go messageFilterHandler(parsedMessages, filteredMessages, *filter)
-	go multiplexerHandler(filteredMessages, aggregatedMessages, printedMessages, *aggregate)
-
-	if *aggregate {
-		go messageAggregatorHandler(aggregatedMessages, *aggregateFrequency, interrupt, messageReceiver)
-	} else {
-		go messagePrinterHandler(printedMessages, interrupt, messageReceiver)
-	}
-
-	//keep some dummy code otherwise the process ends
 	for {
+		select {
+		case <-done:
+			os.Exit(0)
+		}
 	}
 }

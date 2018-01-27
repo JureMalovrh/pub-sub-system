@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -13,12 +15,15 @@ type Receiver interface {
 	ReadMessage() []byte
 	Close() error
 	CloseMessage() error
+	IsClosed() bool
 }
 
 //MessageReceiver is a receiver for messages
 type MessageReceiver struct {
 	Connection *websocket.Conn
 	URL        string
+	sync.Mutex
+	Closed bool
 }
 
 //NewMessageReceiver returns new MessageReceiver
@@ -47,8 +52,12 @@ func (mr *MessageReceiver) Connect() error {
 
 //ReadMessage tries to read a message from socket connection. If he fails, he tries to reconect.
 func (mr *MessageReceiver) ReadMessage() []byte {
+	if mr.IsClosed() {
+		return nil
+	}
 	_, msg, err := mr.Connection.ReadMessage()
-	if err != nil {
+	if err != nil && mr.IsClosed() == false {
+		fmt.Println(err)
 		connErr := mr.Connect()
 		if connErr == nil {
 			_, msg, _ := mr.Connection.ReadMessage()
@@ -61,10 +70,24 @@ func (mr *MessageReceiver) ReadMessage() []byte {
 
 //Close closes WS connection
 func (mr *MessageReceiver) Close() error {
+	mr.Lock()
+	mr.Closed = true
+	mr.Unlock()
 	return mr.Connection.Close()
 }
 
+//CloseMessage sends close message to socket
 func (mr *MessageReceiver) CloseMessage() error {
+	mr.Lock()
+	mr.Closed = true
+	mr.Unlock()
 	err := mr.Connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	return err
+}
+
+func (mr *MessageReceiver) IsClosed() bool {
+	mr.Lock()
+	tmp := mr.Closed
+	mr.Unlock()
+	return tmp
 }
