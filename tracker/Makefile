@@ -11,3 +11,6 @@ demo-data: demo-data/remove
 
 demo-data/remove:
 	@sudo docker-compose exec database /opt/demo/drop_data.sh
+
+qa:
+	go test ./handler/ ./database/ -v -race

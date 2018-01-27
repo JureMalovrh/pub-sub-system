@@ -48,8 +48,6 @@ func NewAccountHandler(db database.Storage, publisher socket.Client) func(w http
 	return func(w http.ResponseWriter, r *http.Request) {
 		accountID, data, err := parseURL(r)
 
-		fmt.Println(accountID)
-		fmt.Println(accountID, data)
 		if err != nil {
 			encodeJSON(AccountCallResponse{StatusCode: http.StatusBadRequest, Error: err.Error()}, w)
 			return
@@ -68,14 +66,9 @@ func NewAccountHandler(db database.Storage, publisher socket.Client) func(w http
 			encodeJSON(AccountCallResponse{StatusCode: http.StatusOK, ResponseText: "Account not active"}, w)
 			return
 		}
-
 		go publisher.SendMessage(accountID, data)
 
 		encodeJSON(AccountCallResponse{StatusCode: http.StatusAccepted, ResponseText: "Account acepted"}, w)
-		_ = data
-		fmt.Println("here")
-		//sendData(accountID, data)
-		// send data
-		// call socket if needed
+		//time.Sleep(1 * time.Second)
 	}
 }

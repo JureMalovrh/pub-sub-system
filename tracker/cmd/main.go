@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
@@ -80,79 +79,4 @@ func main() {
 	userActionNotifier := socket.NewSocketSender(socketConnection)
 
 	startServer(config.Address, userDatabase, userActionNotifier)
-
-	type Person struct {
-		ID    bson.ObjectId `bson:"_id,omitempty"`
-		Name  string
-		Phone string
-	}
-	/*
-					c := session.DB("davidim").C("people")
-					err := c.Insert(&Person{Name: "Ale", Phone: "+55 53 8116 9639"},
-						&Person{Name: "Cla", Phone: "+55 53 8402 8510"})
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					result := Person{}
-					err = c.Find(bson.M{"name": "Ale"}).One(&result)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					fmt.Println("Phone:", result)
-					result = Person{}
-					err = c.Find(bson.M{"_id": bson.ObjectIdHex("5a638e99ed12aa438f5fef20")}).One(&result)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					fmt.Println("Phone:", result)
-					fmt.Println("Phone:", result.Phone)
-					err = c.FindId(bson.ObjectIdHex("5a638e99ed12aa438f5fef20")).One(&result)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					fmt.Println("Phone:", result)
-					fmt.Println("Phone:", result.Phone)
-
-
-						type Person struct {
-							Name  string
-							Phone string
-						}
-
-							c := session.DB("davidim").C("people")
-							err = c.Insert(&Person{"Ale", "+55 53 8116 9639"},
-								&Person{"Cla", "+55 53 8402 8510"})
-							if err != nil {
-								log.Fatal(err)
-							}
-
-							result := Person{}
-							err = c.Find(bson.M{"name": "Ale"}).One(&result)
-							if err != nil {
-								log.Fatal(err)
-							}
-
-							fmt.Println("Phone:", result.Phone)
-
-				r := mux.NewRouter()
-				r.HandleFunc("/", testHandler).Methods("POST")
-				r.HandleFunc("/user", testHandler).Methods("POST")
-				r.HandleFunc("/articles", testHandler)
-
-				server := http.Server{
-					Addr:    ":8080",
-					Handler: r,
-				}
-
-			log.Println("Serving on", server.Addr)
-
-		errS := server.ListenAndServe(userDatabase)
-		if errS != nil {
-			log.Fatal(errS)
-		}
-	*/
 }

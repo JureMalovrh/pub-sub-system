@@ -42,7 +42,7 @@ func (us *UserStorage) GetUserByID(userID string) (Person, error) {
 
 	err := us.Collection.FindId(bson.ObjectIdHex(userID)).One(&person)
 	if err != nil {
-		log.Print("method", "GetUserByID", "error", err)
+		log.Printf("method GetUserByID, error %s", err)
 		return Person{}, err
 	}
 	return person, nil
