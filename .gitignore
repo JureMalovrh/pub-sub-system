@@ -1,5 +1,4 @@
 publisher/node_modules
 publisher/*.log
-subscriber/dist/*
-tracker/dist/*
-tracker/dist
+subscriber/dist/client
+tracker/dist/tracker
