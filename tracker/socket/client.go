@@ -48,6 +48,7 @@ func (s *ClientSender) SendMessage(accountID string, data string) (bool, error) 
 
 	err = s.Connection.WriteMessage(websocket.TextMessage, messageToSend)
 	if err != nil {
+		log.Printf("Error writing to socket %s", err)
 		return false, err
 	}
 	return true, nil

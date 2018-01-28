@@ -1,11 +1,10 @@
-
-
 build:
 	@go build -o dist/tracker -i $(shell find cmd -name "*.go")
 
 run: build
 	@./dist/tracker -config config.toml
 
+#adds demo data into enviroment
 demo-data: demo-data/remove
 	@sudo docker-compose exec database /opt/demo/insert_data.sh
 
