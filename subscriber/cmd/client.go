@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 	"time"
 )
 
@@ -18,7 +19,10 @@ type Message struct {
 func messageReceiverHandler(messages chan []byte, close chan bool, messageReceiver Receiver) {
 	for {
 		if messageReceiver.IsClosed() {
-			close <- true
+			//send close to all three other routines
+			for i := 0; i < 3; i++ {
+				close <- true
+			}
 			return
 		}
 
@@ -88,6 +92,9 @@ func messagePrinterHandler(printedMessages chan Message, interrupt chan os.Signa
 		case <-interrupt:
 			messageReceiver.Close()
 			messageReceiver.CloseMessage()
+			select {
+			case <-time.After(time.Second):
+			}
 			done <- true
 			return
 		case <-close:
@@ -112,13 +119,12 @@ func messageAggregatorHandler(aggregatedMessages chan Message, aggregateFrequenc
 				log.Printf("ID: %s, number of messages %d", key, val)
 			}
 		case <-interrupt:
-			//log.Println("interrupt")
+			messageReceiver.Close()
 			messageReceiver.CloseMessage()
 
 			select {
 			case <-time.After(time.Second):
 			}
-			messageReceiver.Close()
 			done <- true
 			return
 		case <-close:
@@ -155,8 +161,8 @@ func main() {
 		aggregateFrequency = flag.Int("aggfreq", 3, "Only if agg=true, set time for updation of screen for aggregated data")
 	)
 	flag.Parse()
-
 	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
 	done := make(chan bool, 1)
 
 	log.Printf("connecting to %s", *addr)

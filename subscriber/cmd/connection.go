@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/url"
 	"sync"
 	"time"
@@ -57,7 +56,6 @@ func (mr *MessageReceiver) ReadMessage() []byte {
 	}
 	_, msg, err := mr.Connection.ReadMessage()
 	if err != nil && mr.IsClosed() == false {
-		fmt.Println(err)
 		connErr := mr.Connect()
 		if connErr == nil {
 			_, msg, _ := mr.Connection.ReadMessage()
