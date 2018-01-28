@@ -28,3 +28,12 @@ qa: $(QA_PROJECTS)
 
 qa/%:
 	$(MAKE) -C $* qa
+
+help:
+	@echo Commands for running and dealing with project
+	@echo "\"devbox/build\" - builds devbox images and docker-compose enviroment"
+	@echo "\"devbox/run\" - builds devbox and starts devbox"
+	@echo "\"devbox/stop\" - stops devbox"
+	@echo "\"devbox/down\" - stops devbox and removes images" 
+	@echo "\"devbox/logs\" - prints a logs of a devbox"
+	@echo "\"qa\" - runs a test for project"
