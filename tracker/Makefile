@@ -13,3 +13,11 @@ demo-data/remove:
 
 qa:
 	go test ./handler/ ./database/ -v -race
+
+help:
+	@echo Commands for running and dealing with project
+	@echo "\"build\" - builds code"
+	@echo "\"run\" - builds code and run project"
+	@echo "\"demo-data\" - inserts demo-data in database"
+	@echo "\"demo-data/remove\" - removes demo-data from database" 
+	@echo "\"qa\" - runs a test for project"
