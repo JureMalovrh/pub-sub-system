@@ -5,6 +5,7 @@
 - Node
 - Docker
 - docker-compose
+- [dep](https://github.com/golang/dep)
 
 ## Task:
 - create publish-subscribe system with three different parts:
